@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Class Tile Wall Fundraiser</title>
+    <style>
+        :root {
+            --bg: #f6f7fb;
+            --card: #fff;
+            --tx: #1d2433;
+            --av: #dfe6f5;
+            --rs: #ffd35c;
+            --pd: #3cb371;
+            --sel: #3b6df0
+        }
+
+        @media(prefers-color-scheme:dark) {
+            :root {
+                --bg: #141824;
+                --card: #1e2433;
+                --tx: #eef1f8;
+                --av: #2d3650
+            }
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--tx);
+            padding: 16px
+        }
+
+        .wrap {
+            max-width: 900px;
+            margin: auto
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px
+        }
+
+        h1 {
+            margin: 0 0 4px
+        }
+
+        .bar {
+            height: 12px;
+            background: var(--av);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 8px 0
+        }
+
+        .bar i {
+            display: block;
+            height: 100%;
+            background: var(--pd);
+            width: 0
+        }
+
+        #wall {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+            gap: 3px
+        }
+
+        .t {
+            aspect-ratio: 1;
+            border: 0;
+            border-radius: 4px;
+            background: var(--av);
+            cursor: pointer;
+            font-size: 10px;
+            color: var(--tx);
+            padding: 0
+        }
+
+        .t.r {
+            background: var(--rs);
+            cursor: not-allowed;
+            color: #333
+        }
+
+        .t.p {
+            background: var(--pd);
+            cursor: not-allowed;
+            color: #fff
+        }
+
+        .t.s {
+            background: var(--sel);
+            color: #fff
+        }
+
+        .legend span {
+            display: inline-block;
+            margin-right: 12px;
+            font-size: 13px
+        }
+
+        .legend b {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            vertical-align: middle;
+            margin-right: 4px
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 4px 0 10px;
+            border: 1px solid #8884;
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--tx);
+            font-size: 15px
+        }
+
+        button.go {
+            background: var(--sel);
+            color: #fff;
+            border: 0;
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%
+        }
+
+        button.go:disabled {
+            opacity: .5
+        }
+
+        .sm {
+            font-size: 13px;
+            opacity: .75
+        }
+
+        .sticky {
+            position: sticky;
+            bottom: 0
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <div class="card">
+            <h1>🧱 Build Our Classroom Floor!</h1>
+            <div class="sm">Each tile is $5. Pick your tiles, reserve them, then send the payment to school with your
+                child.</div>
+            <div class="bar"><i id="fill"></i></div>
+            <div id="stats">Loading…</div>
+            <div class="legend"><span><b style="background:var(--av)"></b>Available</span><span><b
+                        style="background:var(--rs)"></b>Reserved</span><span><b
+                        style="background:var(--pd)"></b>Paid</span><span><b style="background:var(--sel)"></b>Your
+                    pick</span></div>
+        </div>
+
+        <div class="card">
+            <div id="wall"></div>
+        </div>
+
+        <div class="card" id="formCard">
+            <h3>Reserve <span id="cnt">0</span> tile(s) = $<span id="amt">0</span></h3>
+            <input id="pn" placeholder="Parent name"><input id="cn" placeholder="Child name">
+            <input id="gr" placeholder="Class / grade (e.g. Grade 4)"><input id="em" type="email"
+                placeholder="Parent email">
+            <button class="go" id="btn" disabled>Reserve tiles</button>
+            <div id="msg" style="margin-top:12px"></div>
+        </div>
+    </div>
+    <script>
+        // ===== SETTINGS: paste your Apps Script Web App URL here =====
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzPI6A_BfhO11hfMv5SEZs3d2ELL7ivDsIySXgs_g8MAnW8h8gRmQ8EzlxWS90WLId4/exec";
+        // =============================================================
+        let TOTAL = 1000, PRICE = 5, state = {}, sel = new Set();
+        const $ = id => document.getElementById(id);
+        function render() {
+            const w = $("wall"); w.innerHTML = ""; let r = 0, p = 0;
+            for (let i = 1; i <= TOTAL; i++) {
+                const s = state[i], b = document.createElement("button");
+                b.className = "t" + (s ? (s.paid ? " p" : " r") : "") + (sel.has(i) ? " s" : ""); b.textContent = i;
+                if (s) {s.paid ? p++ : r++; b.title = s.child + " (" + s.grade + ")"}
+                b.onclick = () => {if (s) return; sel.has(i) ? sel.delete(i) : sel.add(i); render()}; w.appendChild(b)
+            }
+            $("fill").style.width = (p / TOTAL * 100) + "%";
+            $("stats").textContent = `$${p * PRICE} paid • $${r * PRICE} pending • goal $${TOTAL * PRICE}`;
+            $("cnt").textContent = sel.size; $("amt").textContent = sel.size * PRICE; $("btn").disabled = !sel.size;
+        }
+        async function load() {
+            try {
+                const d = await (await fetch(SCRIPT_URL)).json(); TOTAL = d.total; PRICE = d.price;
+                state = {}; d.tiles.forEach(t => state[t.tile] = t);
+                [...sel].forEach(t => {if (state[t]) sel.delete(t)}); render()
+            }
+            catch (e) {$("stats").textContent = "Could not load the wall. Please refresh."}
+        }
+        $("btn").onclick = async () => {
+            const f = {parent: $("pn").value.trim(), child: $("cn").value.trim(), grade: $("gr").value.trim(), email: $("em").value.trim()};
+            if (!f.parent || !f.child || !f.grade || !f.email) {$("msg").textContent = "Please fill in every field."; return }
+            const tiles = [...sel].sort((a, b) => a - b); $("btn").disabled = true; $("msg").textContent = "Reserving…";
+            try {
+                const d = await (await fetch(SCRIPT_URL, {method: "POST", headers: {"Content-Type": "text/plain"}, body: JSON.stringify({...f, tiles})})).json();
+                if (d.ok) {
+                    const a = tiles.length * PRICE; sel.clear();
+                    $("msg").innerHTML = `<b>✅ Reserved!</b> Please send $${a} to school with ${f.child}. A confirmation was emailed to you and the principal.`;
+                    ["pn", "cn", "gr", "em"].forEach(k => $(k).value = "")
+                }
+                else if (d.taken) {$("msg").textContent = "Sorry, tile(s) " + d.taken.join(", ") + " were just taken. Please pick others."}
+                else $("msg").textContent = "Something went wrong. Please try again.";
+            } catch (e) {$("msg").textContent = "Network problem. Please try again."}
+            await load();
+        };
+        load(); setInterval(load, 30000);
+    </script>
+</body>
+
+</html>
